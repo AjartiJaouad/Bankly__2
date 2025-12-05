@@ -1,3 +1,33 @@
+<?php
+session_start();
+
+$pdo = new PDO("mysql:host=localhost;dbname=bankly_v2;charset=utf8", "root", "");
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $email = $_POST["Email"];
+    $password = $_POST["password"];
+
+    $sql = $pdo->prepare("SELECT * FROM utilisateur WHERE email = ?");
+    $sql->execute([$email]);
+    $user = $sql->fetch(PDO::FETCH_ASSOC);
+
+    if ($user) {
+        
+        if ($password == $user["mot_de_passe"]) {
+            $_SESSION["user_id"] = $user["id_user"];
+            $_SESSION["nom"] = $user["nom"];
+            header("Location: dashboard.php");
+            exit();
+        } else {
+            $error = "Mot de passe incorrect";
+        }
+    } else {
+        $error = "Email introuvable";
+    }
+}
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -14,6 +44,10 @@
         <header>
             <img class="w-16 mx-auto mb-5" src="banque.png" />
         </header>
+
+        <?php if (!empty($error)) { ?>
+            <p class="text-red-500 text-center mb-4"><?= $error ?></p>
+        <?php } ?>
 
         <form action="login.php" method="POST">
             <div>
@@ -33,7 +67,6 @@
                     type="submit" value="Login">
             </div>
         </form>
-
     </div>
 
 </body>
