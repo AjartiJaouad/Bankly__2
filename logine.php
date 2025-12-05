@@ -15,7 +15,7 @@
             <img class="w-16 mx-auto mb-5" src="banque.png" />
         </header>
 
-        <!-- <form action="login.php" method="POST">
+        <form action="login.php" method="POST">
             <div>
                 <label class="block mb-2 text-white font-semibold">Email</label>
                 <input class="w-full p-2 mb-6 text-indigo-900 rounded-lg border border-white/50 outline-none focus:bg-white"
@@ -32,7 +32,7 @@
                 <input class="w-full bg-indigo-700 hover:bg-indigo-900 text-white font-bold py-2 px-4 rounded-lg transition"
                     type="submit" value="Login">
             </div>
-        </form> -->
+        </form>
 
     </div>
 
