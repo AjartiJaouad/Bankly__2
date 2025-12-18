@@ -25,7 +25,7 @@
             <ul class="space-y-3 font-semibold">
               <a href="client.php">  <li  class="p-3 rounded-lg hover:bg-white/30 cursor-pointer transition">👤 Clients</li></a>
                <a href="comptes.php"> <li class="p-3 rounded-lg hover:bg-white/30 cursor-pointer transition">🏦 Comptes</li></a>
-                <li class="p-3 rounded-lg hover:bg-white/30 cursor-pointer transition">💸 Transactions</li>
+               <a href="Transactions.php">   <li class="p-3 rounded-lg hover:bg-white/30 cursor-pointer transition">💸 Transactions</li>
                 <li class="p-3 rounded-lg hover:bg-white/30 cursor-pointer transition">⚙️ Utilisateurs</li>
             </ul>
             <div class="mt-4">

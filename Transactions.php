@@ -1,7 +1,37 @@
 <?php 
 session_start();
 $conn = new mysqli("localhost","root","","bankly_v2");
-if($conn->connect_error) die("Erreur connexion"); ?>
+if($conn->connect_error) die("Erreur connexion");
+$comptes = $conn->query("SELECT id_account, account_number, type, balance FROM comptes");
+$message = '';
+// traiter la formulaire
+if(isset($_POST['submit'])){
+    $compte_id = $_POST['compte_id'];
+    $type = $_POST['type'];
+    $montant = (float)$_POST['montant'];
+    $description = $_POST['description'];
+
+    $res = $conn->query("SELECT balance FROM comptes WHERE id_account = $compte_id");
+    $compte = $res->fetch_assoc();
+    $solde_actuel = $compte['balance'];
+
+    if($type=='Retrait' && $montant>$solde_actuel){
+        $message = "Erreur : le montant du retrait dépasse le solde actuel.";
+    } else {
+        $nouveau_solde = ($type=='Dépôt') ? $solde_actuel+$montant : $solde_actuel-$montant;
+        $stmt = $conn->prepare("UPDATE comptes SET balance=? WHERE id_account=?");
+        $stmt->bind_param("di",$nouveau_solde,$compte_id);
+        $stmt->execute();
+
+        $stmt = $conn->prepare("INSERT INTO transactions (compte_id,type,montant,description) VALUES (?,?,?,?)");
+        $stmt->bind_param("isds",$compte_id,$type,$montant,$description);
+        $stmt->execute();
+
+        $message = "Transaction effectuee avec succès !";
+    }
+}
+
+ ?>
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -26,7 +56,7 @@ if($conn->connect_error) die("Erreur connexion"); ?>
     </a>
 
 
-    <!-- MAIN CONTENT -->
+    
     <main class="flex-1 p-8 m-4 overflow-auto">
 
         <!-- Formulaire Transactions -->
@@ -58,7 +88,7 @@ if($conn->connect_error) die("Erreur connexion"); ?>
                 </form>
             </div>
 
-            <!-- Historique des transactions -->
+            <!-- Historique -->
             <div class="flex-[2.5] bg-white/20 backdrop-blur-xl rounded-2xl p-6 text-white shadow-xl overflow-auto">
                 <h2 class="text-xl font-bold mb-4">Historique des Transactions</h2>
                 <table class="w-full text-center border border-white/50">
