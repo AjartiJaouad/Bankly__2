@@ -1,3 +1,8 @@
+<?php 
+session_start();
+$conn = new mysqli("localhost","root","","bankly_v2");
+if($conn->connect_error) die("Erreur connexion"); ?>
+
 <!DOCTYPE html>
 <html lang="fr">
 

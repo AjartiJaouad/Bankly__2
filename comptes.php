@@ -56,7 +56,7 @@ $comptes = $conn->query("
             <a href="comptes.php">
                 <li class="p-3 rounded-lg hover:bg-white/30 cursor-pointer transition bg-white/30">🏦 Comptes</li>
             </a>
-            <a href="#">
+            <a href="Transactions.php">
                 <li class="p-3 rounded-lg hover:bg-white/30 cursor-pointer transition">💸 Transactions</li>
             </a>
             <a href="#">
