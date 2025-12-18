@@ -24,7 +24,7 @@
         <aside class="w-60 bg-white/20 backdrop-blur-xl text-white p-5 shadow-xl flex flex-col justify-between">
             <ul class="space-y-3 font-semibold">
               <a href="client.php">  <li  class="p-3 rounded-lg hover:bg-white/30 cursor-pointer transition">👤 Clients</li></a>
-                <li class="p-3 rounded-lg hover:bg-white/30 cursor-pointer transition">🏦 Comptes</li>
+               <a href="comptes.php"> <li class="p-3 rounded-lg hover:bg-white/30 cursor-pointer transition">🏦 Comptes</li></a>
                 <li class="p-3 rounded-lg hover:bg-white/30 cursor-pointer transition">💸 Transactions</li>
                 <li class="p-3 rounded-lg hover:bg-white/30 cursor-pointer transition">⚙️ Utilisateurs</li>
             </ul>
