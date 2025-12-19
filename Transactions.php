@@ -1,38 +1,75 @@
-<?php 
+<?php
 session_start();
-$conn = new mysqli("localhost","root","","bankly_v2");
-if($conn->connect_error) die("Erreur connexion");
-$comptes = $conn->query("SELECT id_account, account_number, type, balance FROM comptes");
-$message = '';
-// traiter la formulaire
-if(isset($_POST['submit'])){
-    $compte_id = $_POST['compte_id'];
-    $type = $_POST['type'];
-    $montant = (float)$_POST['montant'];
+
+
+$conn = new mysqli("localhost", "root", "", "bankly_v2");
+if ($conn->connect_error) {
+    die("Erreur connexion : " . $conn->connect_error);
+}
+
+$message = "";
+
+$comptes = $conn->query("
+    SELECT id_account, account_number, balance
+    FROM comptes
+");
+if (!$comptes) {
+    die("Erreur comptes : " . $conn->error);
+}
+
+if (isset($_POST['submit'])) {
+
+    $compte_id   = (int)$_POST['compte_id'];
+    $type        = $_POST['type'];
+    $montant     = (float)$_POST['montant'];
     $description = $_POST['description'];
 
-    $res = $conn->query("SELECT balance FROM comptes WHERE id_account = $compte_id");
-    $compte = $res->fetch_assoc();
-    $solde_actuel = $compte['balance'];
+ 
+    $res = $conn->query("
+        SELECT balance FROM comptes WHERE id_account = $compte_id
+    ");
+    if (!$res) die($conn->error);
 
-    if($type=='Retrait' && $montant>$solde_actuel){
-        $message = "Erreur : le montant du retrait dépasse le solde actuel.";
+    $row = $res->fetch_assoc();
+    $solde_actuel = $row['balance'];
+
+   
+    if ($type === "Retrait" && $montant > $solde_actuel) {
+        $message = "Solde insuffisant";
     } else {
-        $nouveau_solde = ($type=='Dépôt') ? $solde_actuel+$montant : $solde_actuel-$montant;
-        $stmt = $conn->prepare("UPDATE comptes SET balance=? WHERE id_account=?");
-        $stmt->bind_param("di",$nouveau_solde,$compte_id);
-        $stmt->execute();
 
-        $stmt = $conn->prepare("INSERT INTO transactions (compte_id,type,montant,description) VALUES (?,?,?,?)");
-        $stmt->bind_param("isds",$compte_id,$type,$montant,$description);
-        $stmt->execute();
+        $nouveau_solde = ($type === "Dépôt")
+            ? $solde_actuel + $montant
+            : $solde_actuel - $montant;
 
-        $message = "Transaction effectuee avec succès !";
+        $stmt = $conn->prepare("
+            UPDATE comptes SET balance=? WHERE id_account=?
+        ");
+        $stmt->bind_param("di", $nouveau_solde, $compte_id);
+        if (!$stmt->execute()) die($stmt->error);
+
+        // Insert transaction
+        $stmt = $conn->prepare("
+            INSERT INTO `transaction` (account_id, type, montant, description)
+            VALUES (?,?,?,?)
+        ");
+        $stmt->bind_param("isds", $compte_id, $type, $montant, $description);
+        if (!$stmt->execute()) die($stmt->error);
+
+        $message = "Transaction effectuée avec succès";
     }
 }
 
- ?>
 
+$trs = $conn->query("
+    SELECT t.account_id, t.type, t.montant, t.description, c.account_number
+    FROM `transaction` t
+    JOIN comptes c ON c.id_account = t.account_id
+");
+if (!$trs) {
+    die("Erreur transactions : " . $conn->error);
+}
+?>
 <!DOCTYPE html>
 <html lang="fr">
 
@@ -40,91 +77,78 @@ if(isset($_POST['submit'])){
     <meta charset="UTF-8">
     <title>Gestion des Transactions</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
-<body class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 min-h-screen">
+<body class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 min-h-screen p-6 text-white">
 
-
-    <h1 class="text-4xl font-extrabold text-white mb-8 text-center tracking-wide">
-        Gestion des Transactions
-    </h1>
-
+    <h1 class="text-4xl font-bold text-center mb-8">Gestion des Transactions</h1>
     <a href="dashboard.php" class="fixed top-6 left-6 z-50 flex flex-col items-center">
         <img src="dashboard.png" alt="Dashboard" class="w-14 h-14 rounded-full shadow-lg hover:scale-110 transition">
         <p class="text-white text-xs mt-1 font-semibold">Dashboard</p>
     </a>
 
-
-    
-    <main class="flex-1 p-8 m-4 overflow-auto">
-
-        <!-- Formulaire Transactions -->
-        <div class="flex flex-col lg:flex-row gap-6 mb-6">
-            <div class="flex-1 bg-white/20 backdrop-blur-xl rounded-2xl p-6 text-white shadow-xl">
-                <h2 class="text-xl font-bold mb-4">Effectuer une Transaction</h2>
-                <form class="grid grid-cols-1 gap-4">
-                    <label class="font-semibold">Compte</label>
-                    <select class="p-2 rounded w-full bg-white/10 text-white border border-white/50">
-                        <option>a16848862 - hamazza done</option>
-                        <option>b1454243 - jamal bouhdoz</option>
-                    </select>
-
-                    <label class="font-semibold">Type de transaction</label>
-                    <select class="p-2 rounded w-full bg-white/10 text-white border border-white/50">
-                        <option>Dépôt</option>
-                        <option>Retrait</option>
-                    </select>
-
-                    <label class="font-semibold">Montant</label>
-                    <input type="number" placeholder="0" class="p-2 rounded w-full bg-white/10 text-white border border-white/50">
-
-                    <label class="font-semibold">Description</label>
-                    <input type="text" placeholder="Ex: Salaire" class="p-2 rounded w-full bg-white/10 text-white border border-white/50">
-
-                    <button type="submit" class="bg-green-600 hover:bg-green-700 py-2 rounded mt-2 transition">
-                        Effectuer Transaction
-                    </button>
-                </form>
-            </div>
-
-            <!-- Historique -->
-            <div class="flex-[2.5] bg-white/20 backdrop-blur-xl rounded-2xl p-6 text-white shadow-xl overflow-auto">
-                <h2 class="text-xl font-bold mb-4">Historique des Transactions</h2>
-                <table class="w-full text-center border border-white/50">
-                    <thead>
-                        <tr class="bg-white/30">
-                            <th class="border p-2">ID</th>
-                            <th class="border p-2">Compte</th>
-                            <th class="border p-2">Type</th>
-                            <th class="border p-2">Montant</th>
-                            <th class="border p-2">Date</th>
-                            <th class="border p-2">Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="hover:bg-gray-100 text-black">
-                            <td class="p-2 border">1</td>
-                            <td class="p-2 border">a16848862 - hamazza done</td>
-                            <td class="p-2 border">Dépôt</td>
-                            <td class="p-2 border">5000 MAD</td>
-                            <td class="p-2 border">2025-12-17</td>
-                            <td class="p-2 border">Salaire</td>
-                        </tr>
-                        <tr class="hover:bg-gray-100 text-black">
-                            <td class="p-2 border">2</td>
-                            <td class="p-2 border">b1454243 - jamal bouhdoz</td>
-                            <td class="p-2 border">Retrait</td>
-                            <td class="p-2 border">1500 MAD</td>
-                            <td class="p-2 border">2025-12-16</td>
-                            <td class="p-2 border">Facture intrenet</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+    <?php if ($message): ?>
+        <div class="bg-black/40 p-3 rounded mb-6 text-center font-semibold">
+            <?= $message ?>
         </div>
+    <?php endif; ?>
 
-    </main>
+  
+    <form method="POST" class="max-w-xl mx-auto bg-black/30 p-6 rounded space-y-4">
+
+        <label>Compte</label>
+        <select name="compte_id" class="w-full p-2 rounded text-black" required>
+            <?php while ($c = $comptes->fetch_assoc()): ?>
+                <option value="<?= $c['id_account'] ?>">
+                    <?= $c['account_number'] ?> | <?= $c['balance'] ?> MAD
+                </option>
+            <?php endwhile; ?>
+        </select>
+
+        <label>Type</label>
+        <select name="type" class="w-full p-2 rounded text-black">
+            <option>Dépôt</option>
+            <option>Retrait</option>
+        </select>
+
+        <label>Montant</label>
+        <input type="number" name="montant" step="0.01" required
+            class="w-full p-2 rounded text-black">
+
+        <label>Description</label>
+        <input type="text" name="description"
+            class="w-full p-2 rounded text-black">
+
+        <button type="submit" name="submit"
+            class="w-full bg-green-600 hover:bg-green-700 p-2 rounded font-bold">
+            Effectuer Transaction
+        </button>
+    </form>
+
+   
+    <div class="max-w-4xl mx-auto mt-10 bg-black/30 p-6 rounded">
+        <h2 class="text-2xl font-bold mb-4 text-center">Historique des Transactions</h2>
+
+        <table class="w-full border border-white/30 text-center">
+            <thead class="bg-black/40">
+                <tr>
+                    <th class="border p-2">Compte</th>
+                    <th class="border p-2">Type</th>
+                    <th class="border p-2">Montant</th>
+                    <th class="border p-2">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php while ($t = $trs->fetch_assoc()): ?>
+                    <tr>
+                        <td class="border p-2"><?= $t['account_number'] ?></td>
+                        <td class="border p-2"><?= $t['type'] ?></td>
+                        <td class="border p-2"><?= $t['montant'] ?> MAD</td>
+                        <td class="border p-2"><?= $t['description'] ?></td>
+                    </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
     </div>
 
 </body>
